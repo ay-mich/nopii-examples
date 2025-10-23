@@ -1,0 +1,5 @@
+# Core dependency
+nopii
+
+# Additional dependencies for examples
+pandas

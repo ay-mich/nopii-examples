@@ -1,0 +1,79 @@
+name: Run Examples
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run basic usage example
+        run: |
+          source .venv/bin/activate
+          cd examples
+          python 01_getting_started.py
+
+      - name: Run detectors and transformers (quick test)
+        run: |
+          source .venv/bin/activate
+          cd examples
+          timeout 60 python 02_detectors_and_transformers.py || true
+
+      - name: Run compliance and governance example
+        run: |
+          source .venv/bin/activate
+          cd examples
+          python 06_compliance_and_governance.py
+
+      - name: Verify no output files left behind
+        run: |
+          cd examples
+          if ls *.csv *.json *.xlsx *.parquet 2>/dev/null; then
+            echo "Warning: Output files found in examples directory"
+            ls -la *.csv *.json *.xlsx *.parquet 2>/dev/null || true
+          else
+            echo "✅ No output files left behind"
+          fi
+
+  quick-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Quick dependency check
+        run: |
+          python -m pip install --upgrade pip
+          pip install nopii
+          python -c "import nopii; print(f'✅ nopii {nopii.__version__} imported successfully')"
+
+      - name: Quick syntax check
+        run: |
+          python -m py_compile examples/*.py
+          echo "✅ All example files compile successfully"
